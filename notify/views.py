@@ -1,6 +1,3 @@
-def my_view(request):
-    return {'project':'Notify'}
-
 from pyramid.view import view_config
 from pyramid.response import Response
 from pyramid.httpexceptions import HTTPFound
@@ -29,7 +26,6 @@ class ConnectIOContext(SocketIOContext):
     #self.request is the request
     
     def msg_connect(self, msg):
-        print "Connect message received", msg
         msg = {'type': 'chat', 'uid': msg['uid']}
         self.r = redis.Redis()
         pubsub = self.r.pubsub()
@@ -38,21 +34,15 @@ class ConnectIOContext(SocketIOContext):
             for m in pubsub.listen():
                 if not self.io.connected():
                     return
-                print "From redis", m
                 if m['type'] == 'message':
                     self.io.send(loads(m['data']))
         self.spawn(listener)
-        #self.msg("chat", data = "data")
 
     def msg_chat(self, msg):
-        print "New Chat message received", msg
         if msg.has_key('uid'):
             self.r.publish(msg['uid'], dumps(msg))
 
-        #self.msg("chat", data = msg["data"], uid = msg["uid"])
-
 @view_config(route_name = "socket.io")
 def socketio_service(request):
-    print "Socket.IO request running"
     retval = socketio_manage(ConnectIOContext(request))
     return Response(retval)
